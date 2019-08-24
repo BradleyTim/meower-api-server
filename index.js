@@ -1,9 +1,16 @@
 const express = require('express');
+const morgan = require('morgan');
+const dotenv = require('dotenv');
+const monk = require('monk');
 const cors = require('cors');
+
+dotenv.config({ path: './config.env' });
 
 const PORT = process.env.PORT || 5000;
 
 const app = express();
+const db = monk(process.env.MONGO_URI, { useUnifiedTopology: true });
+const meowers = db.get('meowers');
 
 app.use(cors());
 app.use(express.json());
@@ -24,8 +31,11 @@ app.post('/meowers', (request, response) => {
   if (isValid(request.body)) {
     const meower = {
       name: request.body.name.toString(),
-      content: request.body.content.toString()
+      content: request.body.content.toString(),
+      created: new Date()
     }
+
+    meowers.insertOne(meower).then(createdMeower => response.json(createdMeower));
   } else {
     response.status(422);
     response.json({
