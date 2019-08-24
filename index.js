@@ -3,6 +3,7 @@ const morgan = require('morgan');
 const dotenv = require('dotenv');
 const monk = require('monk');
 const cors = require('cors');
+const rateLimit = require("express-rate-limit");
 
 dotenv.config({ path: './config.env' });
 
@@ -26,8 +27,19 @@ app.get('/', (request, response) => {
   });
 });
 
+app.get('/meowers', (request, response) => {
+  meowers.find().then(meowers => response.json(meowers));
+});
+
+const limiter = rateLimit({
+  windowMs: 15 * 1000, // 15 seconds
+  max: 1 //limit each IP to 1 request per windowMs
+});
+
+app.use(limiter);
+
 app.post('/meowers', (request, response) => {
-  console.log(request.body);
+  //console.log(request.body);
   if (isValid(request.body)) {
     const meower = {
       name: request.body.name.toString(),
@@ -35,7 +47,7 @@ app.post('/meowers', (request, response) => {
       created: new Date()
     }
 
-    meowers.insertOne(meower).then(createdMeower => response.json(createdMeower));
+    meowers.insert(meower).then(createdMeower => response.json(createdMeower));
   } else {
     response.status(422);
     response.json({
